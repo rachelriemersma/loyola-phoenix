@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
   SafeAreaView,
@@ -6,6 +7,7 @@ import {
   View,
   StyleSheet,
   ActivityIndicator,
+  TouchableOpacity
 } from 'react-native';
 
 const decodeHTML = (html: string) => {
@@ -28,6 +30,7 @@ export default function TabOneScreen() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const router = useRouter();
 
   const fetchArticles = (pageNum: number, append: boolean = false) => {
     if (pageNum === 1) {
@@ -95,13 +98,23 @@ export default function TabOneScreen() {
         data={articles}
         keyExtractor={item => item.id.toString()}
         renderItem={({ item }) => (
-          <View style={styles.article}>
-            <Text style={styles.title}>{decodeHTML(item.title.rendered)}</Text>
-            <Text style={styles.date}>
-              {new Date(item.date).toLocaleDateString()} at {new Date(item.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-            </Text>
-          </View>
-        )}
+  <TouchableOpacity
+    style={styles.article}
+    onPress={() => router.push({
+      pathname: '/article' as any,
+      params: {
+        title: item.title.rendered,
+        date: item.date,
+        content: item.content.rendered,
+      }
+    })}
+  >
+    <Text style={styles.title}>{decodeHTML(item.title.rendered)}</Text>
+    <Text style={styles.date}>
+      {new Date(item.date).toLocaleDateString()} at {new Date(item.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+    </Text>
+  </TouchableOpacity>
+)}
         onEndReached={loadMore}
         onEndReachedThreshold={0.5}
         ListFooterComponent={renderFooter}
