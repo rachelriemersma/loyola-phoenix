@@ -11,7 +11,10 @@ import {
   ScrollView,
 } from 'react-native';
 
+const HOME_CATEGORIES = [103, 111, 112, 108, 107, 110, 113, 740, 102, 746, 741, 738, 739, 99, 2068, 744, 136, 675, 676, 135, 745, 2470, 761, 3548, 104, 220, 3920, 142, 751, 750, 797, 749, 119, 2439, 3478, 3760, 3762, 3763, 3764, 3765];
+
 const CATEGORIES = [
+  { id: HOME_CATEGORIES, name: 'Home' },
   { id: [103, 111, 112, 108, 107, 110, 113, 740], name: 'News' },
   { id: [102, 746, 741, 738, 739], name: 'Sports' },
   { id: [99, 2068, 744, 136, 675, 676, 135, 745, 2470, 761, 3548], name: 'Arts' },
@@ -39,7 +42,8 @@ export default function TabOneScreen() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState([103, 111, 112, 108, 107]);
+  const [selectedCategory, setSelectedCategory] = useState(HOME_CATEGORIES);
+  const [selectedName, setSelectedName] = useState('Home');
   const router = useRouter();
 
   const fetchArticles = (categoryId: number[], pageNum: number, append: boolean = false) => {
@@ -49,7 +53,7 @@ export default function TabOneScreen() {
       setLoadingMore(true);
     }
 
-    fetch(`https://loyolaphoenix.com/wp-json/wp/v2/posts?categories=${categoryId.join(',')}&per_page=20&page=${pageNum}&orderby=date&order=desc`)
+    fetch(`https://loyolaphoenix.com/wp-json/wp/v2/posts?categories=${categoryId.join(',')}&per_page=20&page=${pageNum}&orderby=date&order=desc&_embed`)
       .then(response => {
         const totalPages = response.headers.get('X-WP-TotalPages');
         setHasMore(pageNum < parseInt(totalPages || '1'));
@@ -100,7 +104,6 @@ export default function TabOneScreen() {
     <SafeAreaView style={styles.container}>
       <Text style={styles.header}>The Loyola Phoenix</Text>
 
-      {/* Category Tabs */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -111,13 +114,16 @@ export default function TabOneScreen() {
             key={category.name}
             style={[
               styles.tab,
-              selectedCategory === category.id && styles.activeTab
+              selectedName === category.name && styles.activeTab
             ]}
-            onPress={() => setSelectedCategory(category.id)}
+            onPress={() => {
+              setSelectedCategory(category.id);
+              setSelectedName(category.name);
+            }}
           >
             <Text style={[
               styles.tabText,
-              selectedCategory === category.id && styles.activeTabText
+              selectedName === category.name && styles.activeTabText
             ]}>
               {category.name}
             </Text>
@@ -142,10 +148,14 @@ export default function TabOneScreen() {
                   title: item.title.rendered,
                   date: item.date,
                   content: item.content.rendered,
+                  author: item._embedded?.author?.[0]?.name || 'The Loyola Phoenix',
                 }
               })}
             >
               <Text style={styles.title}>{decodeHTML(item.title.rendered)}</Text>
+              <Text style={styles.author}>
+                {item._embedded?.author?.[0]?.name || 'The Loyola Phoenix'}
+              </Text>
               <Text style={styles.date}>
                 {new Date(item.date).toLocaleDateString()} at {new Date(item.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </Text>
@@ -209,7 +219,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 5,
+    marginBottom: 4,
+  },
+  author: {
+    fontSize: 13,
+    color: '#8B0000',
+    fontWeight: '600',
+    marginBottom: 3,
   },
   date: {
     fontSize: 12,

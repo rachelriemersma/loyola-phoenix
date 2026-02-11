@@ -26,6 +26,8 @@ const stripHTML = (html: string) => {
   return html.replace(/<[^>]*>/g, '');
 };
 
+const { title, date, content, author } = useLocalSearchParams();
+
 export default function ArticleScreen() {
   const { title, date, content } = useLocalSearchParams();
 
@@ -33,6 +35,7 @@ export default function ArticleScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scroll}>
         <Text style={styles.title}>{decodeHTML(title as string)}</Text>
+        <Text style={styles.author}>{author}</Text>
         <Text style={styles.date}>
           {new Date(date as string).toLocaleDateString()} at {new Date(date as string).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </Text>
@@ -72,4 +75,10 @@ const styles = StyleSheet.create({
     lineHeight: 26,
     color: '#333',
   },
+  author: {
+  fontSize: 14,
+  color: '#8B0000',
+  fontWeight: '600',
+  marginBottom: 5,
+},
 });
