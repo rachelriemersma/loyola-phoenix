@@ -7,8 +7,17 @@ import {
   View,
   StyleSheet,
   ActivityIndicator,
-  TouchableOpacity
+  TouchableOpacity,
+  ScrollView,
 } from 'react-native';
+
+const CATEGORIES = [
+  { id: [103, 111, 112, 108, 107, 110, 113, 740], name: 'News' },
+  { id: [102, 746, 741, 738, 739], name: 'Sports' },
+  { id: [99, 2068, 744, 136, 675, 676, 135, 745, 2470, 761, 3548], name: 'Arts' },
+  { id: [104, 220, 3920, 142, 751, 750, 797, 749, 119, 2439, 3478], name: 'Opinion' },
+  { id: [3760, 3762, 3763, 3764, 3765], name: 'Español' },
+];
 
 const decodeHTML = (html: string) => {
   return html
@@ -30,16 +39,17 @@ export default function TabOneScreen() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState([103, 111, 112, 108, 107]);
   const router = useRouter();
 
-  const fetchArticles = (pageNum: number, append: boolean = false) => {
+  const fetchArticles = (categoryId: number[], pageNum: number, append: boolean = false) => {
     if (pageNum === 1) {
       setLoading(true);
     } else {
       setLoadingMore(true);
     }
 
-    fetch(`https://loyolaphoenix.com/wp-json/wp/v2/posts?per_page=20&page=${pageNum}&orderby=date&order=desc`)
+    fetch(`https://loyolaphoenix.com/wp-json/wp/v2/posts?categories=${categoryId.join(',')}&per_page=20&page=${pageNum}&orderby=date&order=desc`)
       .then(response => {
         const totalPages = response.headers.get('X-WP-TotalPages');
         setHasMore(pageNum < parseInt(totalPages || '1'));
@@ -62,14 +72,17 @@ export default function TabOneScreen() {
   };
 
   useEffect(() => {
-    fetchArticles(1, false);
-  }, []);
+    setPage(1);
+    setHasMore(true);
+    setArticles([]);
+    fetchArticles(selectedCategory, 1, false);
+  }, [selectedCategory]);
 
   const loadMore = () => {
     if (!loadingMore && hasMore) {
       const nextPage = page + 1;
       setPage(nextPage);
-      fetchArticles(nextPage, true);
+      fetchArticles(selectedCategory, nextPage, true);
     }
   };
 
@@ -83,42 +96,66 @@ export default function TabOneScreen() {
     );
   };
 
-  if (loading) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" />
-      </View>
-    );
-  }
-
   return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.header}>The Loyola Phoenix</Text>
-      <FlatList
-        data={articles}
-        keyExtractor={item => item.id.toString()}
-        renderItem={({ item }) => (
-  <TouchableOpacity
-    style={styles.article}
-    onPress={() => router.push({
-      pathname: '/article' as any,
-      params: {
-        title: item.title.rendered,
-        date: item.date,
-        content: item.content.rendered,
-      }
-    })}
-  >
-    <Text style={styles.title}>{decodeHTML(item.title.rendered)}</Text>
-    <Text style={styles.date}>
-      {new Date(item.date).toLocaleDateString()} at {new Date(item.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-    </Text>
-  </TouchableOpacity>
-)}
-        onEndReached={loadMore}
-        onEndReachedThreshold={0.5}
-        ListFooterComponent={renderFooter}
-      />
+
+      {/* Category Tabs */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.tabContainer}
+      >
+        {CATEGORIES.map(category => (
+          <TouchableOpacity
+            key={category.name}
+            style={[
+              styles.tab,
+              selectedCategory === category.id && styles.activeTab
+            ]}
+            onPress={() => setSelectedCategory(category.id)}
+          >
+            <Text style={[
+              styles.tabText,
+              selectedCategory === category.id && styles.activeTabText
+            ]}>
+              {category.name}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
+      {loading ? (
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" />
+        </View>
+      ) : (
+        <FlatList
+          data={articles}
+          keyExtractor={item => item.id.toString()}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={styles.article}
+              onPress={() => router.push({
+                pathname: '/article' as any,
+                params: {
+                  title: item.title.rendered,
+                  date: item.date,
+                  content: item.content.rendered,
+                }
+              })}
+            >
+              <Text style={styles.title}>{decodeHTML(item.title.rendered)}</Text>
+              <Text style={styles.date}>
+                {new Date(item.date).toLocaleDateString()} at {new Date(item.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </Text>
+            </TouchableOpacity>
+          )}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={renderFooter}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -140,6 +177,29 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: '#8B0000',
     color: '#8B0000',
+  },
+  tabContainer: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    paddingVertical: 10,
+  },
+  tab: {
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    marginHorizontal: 5,
+    borderRadius: 20,
+    backgroundColor: '#f5f5f5',
+  },
+  activeTab: {
+    backgroundColor: '#8B0000',
+  },
+  tabText: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '600',
+  },
+  activeTabText: {
+    color: '#fff',
   },
   article: {
     padding: 15,
