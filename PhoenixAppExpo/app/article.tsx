@@ -1,4 +1,5 @@
 import React from 'react';
+import { Image } from 'expo-image';
 import {
   SafeAreaView,
   ScrollView,
@@ -26,7 +27,7 @@ const stripHTML = (html: string) => {
   return html.replace(/<[^>]*>/g, '');
 };
 
-const { title, date, content, author } = useLocalSearchParams();
+const { title, date, content, author, imageUrl } = useLocalSearchParams();
 
 export default function ArticleScreen() {
   const { title, date, content } = useLocalSearchParams();
@@ -35,6 +36,13 @@ export default function ArticleScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scroll}>
         <Text style={styles.title}>{decodeHTML(title as string)}</Text>
+        {imageUrl ? (
+          <Image
+            source={{ uri: imageUrl as string }}
+            style={styles.image}
+            contentFit="cover"
+          />
+        ) : null}
         <Text style={styles.author}>{author}</Text>
         <Text style={styles.date}>
           {new Date(date as string).toLocaleDateString()} at {new Date(date as string).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -80,5 +88,11 @@ const styles = StyleSheet.create({
   color: '#8B0000',
   fontWeight: '600',
   marginBottom: 5,
+},
+image: {
+  width: '100%',
+  height: 220,
+  borderRadius: 8,
+  marginBottom: 10,
 },
 });

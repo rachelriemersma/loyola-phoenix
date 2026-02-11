@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
@@ -139,28 +140,39 @@ export default function TabOneScreen() {
         <FlatList
           data={articles}
           keyExtractor={item => item.id.toString()}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.article}
-              onPress={() => router.push({
-                pathname: '/article' as any,
-                params: {
-                  title: item.title.rendered,
-                  date: item.date,
-                  content: item.content.rendered,
-                  author: item._embedded?.author?.[0]?.name || 'The Loyola Phoenix',
-                }
-              })}
-            >
-              <Text style={styles.title}>{decodeHTML(item.title.rendered)}</Text>
-              <Text style={styles.author}>
-                {item._embedded?.author?.[0]?.name || 'The Loyola Phoenix'}
-              </Text>
-              <Text style={styles.date}>
-                {new Date(item.date).toLocaleDateString()} at {new Date(item.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </Text>
-            </TouchableOpacity>
-          )}
+          renderItem={({ item }) => {
+  const imageUrl = item._embedded?.['wp:featuredmedia']?.[0]?.source_url;
+  return (
+    <TouchableOpacity
+      style={styles.article}
+      onPress={() => router.push({
+        pathname: '/article' as any,
+        params: {
+          title: item.title.rendered,
+          date: item.date,
+          content: item.content.rendered,
+          author: item._embedded?.author?.[0]?.name || 'The Loyola Phoenix',
+          imageUrl: imageUrl || '',
+        }
+      })}
+    >
+      {imageUrl && (
+        <Image
+          source={{ uri: imageUrl }}
+          style={styles.image}
+          contentFit="cover"
+        />
+      )}
+      <Text style={styles.title}>{decodeHTML(item.title.rendered)}</Text>
+      <Text style={styles.author}>
+        {item._embedded?.author?.[0]?.name || 'The Loyola Phoenix'}
+      </Text>
+      <Text style={styles.date}>
+        {new Date(item.date).toLocaleDateString()} at {new Date(item.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+      </Text>
+    </TouchableOpacity>
+  );
+}}
           onEndReached={loadMore}
           onEndReachedThreshold={0.5}
           ListFooterComponent={renderFooter}
@@ -240,4 +252,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
   },
+  image: {
+  width: '100%',
+  height: 200,
+  borderRadius: 8,
+  marginBottom: 10,
+},
 });
