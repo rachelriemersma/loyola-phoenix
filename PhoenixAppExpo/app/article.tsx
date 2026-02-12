@@ -1,12 +1,13 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Image } from 'expo-image';
 import {
-  SafeAreaView,
   ScrollView,
   Text,
   View,
   StyleSheet,
+  ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
 
 const decodeHTML = (html: string) => {
@@ -30,23 +31,59 @@ const stripHTML = (html: string) => {
 export default function ArticleScreen() {
   const { title, date, content, author, imageUrl } = useLocalSearchParams();
 
+  // Memoize expensive string operations
+  const decodedTitle = useMemo(() => {
+    if (!title || typeof title !== 'string') return 'Untitled';
+    return decodeHTML(title);
+  }, [title]);
+
+  const decodedContent = useMemo(() => {
+    if (!content || typeof content !== 'string') return 'No content available';
+    return stripHTML(decodeHTML(content));
+  }, [content]);
+
+  const formattedDate = useMemo(() => {
+    if (!date || typeof date !== 'string') return 'Date unavailable';
+    try {
+      const dateObj = new Date(date);
+      if (isNaN(dateObj.getTime())) return 'Date unavailable';
+      return `${dateObj.toLocaleDateString()} at ${dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    } catch {
+      return 'Date unavailable';
+    }
+  }, [date]);
+
+  const authorName = useMemo(() => {
+    if (!author || typeof author !== 'string') return 'The Loyola Phoenix';
+    return author;
+  }, [author]);
+
+  const imageUri = useMemo(() => {
+    if (!imageUrl || typeof imageUrl !== 'string' || imageUrl === '') return null;
+    return imageUrl;
+  }, [imageUrl]);
+
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.scroll}>
-        <Text style={styles.title}>{decodeHTML(title as string)}</Text>
-        {imageUrl ? (
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <ScrollView
+        style={styles.scroll}
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={styles.title}>{decodedTitle}</Text>
+        {imageUri && (
           <Image
-            source={{ uri: imageUrl as string }}
+            source={{ uri: imageUri }}
             style={styles.image}
             contentFit="cover"
+            cachePolicy="memory-disk"
+            transition={200}
+            placeholder={{ blurhash: 'LKO2?V%2Tw=w]~RBVZRi};RPxuwH' }}
           />
-        ) : null}
-        <Text style={styles.author}>{author}</Text>
-        <Text style={styles.date}>
-          {new Date(date as string).toLocaleDateString()} at {new Date(date as string).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-        </Text>
+        )}
+        <Text style={styles.author}>{authorName}</Text>
+        <Text style={styles.date}>{formattedDate}</Text>
         <View style={styles.divider} />
-        <Text style={styles.content}>{stripHTML(decodeHTML(content as string))}</Text>
+        <Text style={styles.content}>{decodedContent}</Text>
       </ScrollView>
     </SafeAreaView>
   );
