@@ -27,10 +27,8 @@ const stripHTML = (html: string) => {
   return html.replace(/<[^>]*>/g, '');
 };
 
-const { title, date, content, author, imageUrl } = useLocalSearchParams();
-
 export default function ArticleScreen() {
-  const { title, date, content } = useLocalSearchParams();
+  const { title, date, content, author, imageUrl } = useLocalSearchParams();
 
   return (
     <SafeAreaView style={styles.container}>
