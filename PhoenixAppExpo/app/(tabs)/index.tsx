@@ -2,26 +2,15 @@ import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  SafeAreaView,
   FlatList,
   Text,
   View,
   StyleSheet,
   ActivityIndicator,
   TouchableOpacity,
-  ScrollView,
 } from 'react-native';
 
-const HOME_CATEGORIES = [103, 111, 112, 108, 107, 110, 113, 740, 102, 746, 741, 738, 739, 99, 2068, 744, 136, 675, 676, 135, 745, 2470, 761, 3548, 104, 220, 3920, 142, 751, 750, 797, 749, 119, 2439, 3478, 3760, 3762, 3763, 3764, 3765];
-
-const CATEGORIES = [
-  { id: HOME_CATEGORIES, name: 'Home' },
-  { id: [103, 111, 112, 108, 107, 110, 113, 740], name: 'News' },
-  { id: [102, 746, 741, 738, 739], name: 'Sports' },
-  { id: [99, 2068, 744, 136, 675, 676, 135, 745, 2470, 761, 3548], name: 'Arts' },
-  { id: [104, 220, 3920, 142, 751, 750, 797, 749, 119, 2439, 3478], name: 'Opinion' },
-  { id: [3760, 3762, 3763, 3764, 3765], name: 'Español' },
-];
+import { useCategory } from '@/contexts/category-context';
 
 const decodeHTML = (html: string) => {
   return html
@@ -37,14 +26,13 @@ const decodeHTML = (html: string) => {
     .replace(/&nbsp;/g, ' ');
 };
 
-export default function TabOneScreen() {
+export default function HomeScreen() {
   const [articles, setArticles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState(HOME_CATEGORIES);
-  const [selectedName, setSelectedName] = useState('Home');
+  const { selectedCategory } = useCategory();
   const router = useRouter();
 
   const fetchArticles = (categoryId: number[], pageNum: number, append: boolean = false) => {
@@ -102,36 +90,7 @@ export default function TabOneScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Text style={styles.header}>The Loyola Phoenix</Text>
-
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.tabContainer}
-      >
-        {CATEGORIES.map(category => (
-          <TouchableOpacity
-            key={category.name}
-            style={[
-              styles.tab,
-              selectedName === category.name && styles.activeTab
-            ]}
-            onPress={() => {
-              setSelectedCategory(category.id);
-              setSelectedName(category.name);
-            }}
-          >
-            <Text style={[
-              styles.tabText,
-              selectedName === category.name && styles.activeTabText
-            ]}>
-              {category.name}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
+    <View style={styles.container}>
       {loading ? (
         <View style={styles.centered}>
           <ActivityIndicator size="large" />
@@ -141,44 +100,44 @@ export default function TabOneScreen() {
           data={articles}
           keyExtractor={item => item.id.toString()}
           renderItem={({ item }) => {
-  const imageUrl = item._embedded?.['wp:featuredmedia']?.[0]?.source_url;
-  return (
-    <TouchableOpacity
-      style={styles.article}
-      onPress={() => router.push({
-        pathname: '/article' as any,
-        params: {
-          title: item.title.rendered,
-          date: item.date,
-          content: item.content.rendered,
-          author: item._embedded?.author?.[0]?.name || 'The Loyola Phoenix',
-          imageUrl: imageUrl || '',
-        }
-      })}
-    >
-      {imageUrl && (
-        <Image
-          source={{ uri: imageUrl }}
-          style={styles.image}
-          contentFit="cover"
-        />
-      )}
-      <Text style={styles.title}>{decodeHTML(item.title.rendered)}</Text>
-      <Text style={styles.author}>
-        {item._embedded?.author?.[0]?.name || 'The Loyola Phoenix'}
-      </Text>
-      <Text style={styles.date}>
-        {new Date(item.date).toLocaleDateString()} at {new Date(item.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-      </Text>
-    </TouchableOpacity>
-  );
-}}
+            const imageUrl = item._embedded?.['wp:featuredmedia']?.[0]?.source_url;
+            return (
+              <TouchableOpacity
+                style={styles.article}
+                onPress={() => router.push({
+                  pathname: '/article' as any,
+                  params: {
+                    title: item.title.rendered,
+                    date: item.date,
+                    content: item.content.rendered,
+                    author: item._embedded?.author?.[0]?.name || 'The Loyola Phoenix',
+                    imageUrl: imageUrl || '',
+                  }
+                })}
+              >
+                {imageUrl && (
+                  <Image
+                    source={{ uri: imageUrl }}
+                    style={styles.image}
+                    contentFit="cover"
+                  />
+                )}
+                <Text style={styles.title}>{decodeHTML(item.title.rendered)}</Text>
+                <Text style={styles.author}>
+                  {item._embedded?.author?.[0]?.name || 'The Loyola Phoenix'}
+                </Text>
+                <Text style={styles.date}>
+                  {new Date(item.date).toLocaleDateString()} at {new Date(item.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </Text>
+              </TouchableOpacity>
+            );
+          }}
           onEndReached={loadMore}
           onEndReachedThreshold={0.5}
           ListFooterComponent={renderFooter}
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -191,37 +150,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  header: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    padding: 15,
-    borderBottomWidth: 2,
-    borderBottomColor: '#8B0000',
-    color: '#8B0000',
-  },
-  tabContainer: {
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    paddingVertical: 10,
-  },
-  tab: {
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    marginHorizontal: 5,
-    borderRadius: 20,
-    backgroundColor: '#f5f5f5',
-  },
-  activeTab: {
-    backgroundColor: '#8B0000',
-  },
-  tabText: {
-    fontSize: 14,
-    color: '#666',
-    fontWeight: '600',
-  },
-  activeTabText: {
-    color: '#fff',
   },
   article: {
     padding: 15,
@@ -253,9 +181,9 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   image: {
-  width: '100%',
-  height: 200,
-  borderRadius: 8,
-  marginBottom: 10,
-},
+    width: '100%',
+    height: 200,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
 });
