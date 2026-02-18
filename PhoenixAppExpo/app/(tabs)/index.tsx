@@ -277,18 +277,19 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: 'Merriweather_700Bold',
     marginBottom: 4,
   },
   author: {
     fontSize: 13,
     color: '#8B0000',
-    fontWeight: '600',
+    fontFamily: 'Montserrat_600SemiBold',
     marginBottom: 3,
   },
   date: {
     fontSize: 12,
     color: '#666',
+    fontFamily: 'Montserrat_400Regular',
   },
   footer: {
     paddingVertical: 20,
@@ -298,6 +299,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontSize: 14,
     color: '#666',
+    fontFamily: 'Montserrat_400Regular',
   },
   image: {
     width: '100%',
@@ -311,11 +313,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 20,
     paddingHorizontal: 20,
+    fontFamily: 'Montserrat_400Regular',
   },
   emptyText: {
     fontSize: 16,
     color: '#666',
     textAlign: 'center',
+    fontFamily: 'Montserrat_400Regular',
   },
   retryButton: {
     backgroundColor: '#8B0000',
@@ -326,7 +330,7 @@ const styles = StyleSheet.create({
   retryButtonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Montserrat_600SemiBold',
   },
   sectionLabel: {
     paddingHorizontal: 16,
@@ -334,10 +338,13 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
     backgroundColor: '#fff',
+    alignItems: 'center',
   },
   sectionLabelText: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: 'Montserrat_600SemiBold',
     color: '#8B0000',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
 });

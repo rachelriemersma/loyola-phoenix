@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontFamily: 'Merriweather_700Bold',
     color: '#111',
     marginBottom: 10,
   },
@@ -113,6 +113,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     marginBottom: 15,
+    fontFamily: 'Montserrat_400Regular',
   },
   divider: {
     height: 2,
@@ -123,19 +124,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 26,
     color: '#333',
+    fontFamily: 'Montserrat_400Regular',
   },
   author: {
-  fontSize: 14,
-  color: '#8B0000',
-  fontWeight: '600',
-  marginBottom: 5,
-},
-image: {
-  width: '100%',
-  height: 220,
-  borderRadius: 8,
-  marginBottom: 10,
-},
+    fontSize: 14,
+    color: '#8B0000',
+    fontFamily: 'Montserrat_600SemiBold',
+    marginBottom: 5,
+  },
+  image: {
+    width: '100%',
+    height: 220,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -147,7 +149,7 @@ image: {
   backText: {
     fontSize: 16,
     color: '#8B0000',
-    fontWeight: '600',
+    fontFamily: 'Montserrat_600SemiBold',
     marginLeft: 6,
   },
 });

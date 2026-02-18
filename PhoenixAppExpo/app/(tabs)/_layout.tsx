@@ -102,9 +102,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#8B0000',
   },
   drawerItemText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 14,
+    fontFamily: 'Montserrat_600SemiBold',
     color: '#000',
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
   },
   drawerItemTextActive: {
     color: '#fff',
