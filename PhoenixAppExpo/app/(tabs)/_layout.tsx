@@ -50,6 +50,12 @@ function DrawerNavigator() {
           fontWeight: 'bold',
           fontSize: 20,
         },
+        drawerStyle: {
+          backgroundColor: '#fff',
+        },
+        headerStyle: {
+          backgroundColor: '#fff',
+        },
       }}
     >
       <Drawer.Screen name="index" />
@@ -89,7 +95,7 @@ const styles = StyleSheet.create({
   drawerItemText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: '#000',
   },
   drawerItemTextActive: {
     color: '#fff',
