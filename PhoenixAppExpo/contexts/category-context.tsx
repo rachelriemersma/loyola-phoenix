@@ -15,17 +15,27 @@ type CategoryContextType = {
   selectedCategory: number[];
   selectedName: string;
   setCategory: (id: number[], name: string) => void;
+  isSearching: boolean;
+  searchQuery: string;
+  setIsSearching: (value: boolean) => void;
+  setSearchQuery: (value: string) => void;
 };
 
 const CategoryContext = createContext<CategoryContextType>({
   selectedCategory: HOME_CATEGORIES,
   selectedName: 'Home',
   setCategory: () => {},
+  isSearching: false,
+  searchQuery: '',
+  setIsSearching: () => {},
+  setSearchQuery: () => {},
 });
 
 export function CategoryProvider({ children }: { children: React.ReactNode }) {
   const [selectedCategory, setSelectedCategory] = useState(HOME_CATEGORIES);
   const [selectedName, setSelectedName] = useState('Home');
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const setCategory = (id: number[], name: string) => {
     setSelectedCategory(id);
@@ -33,7 +43,7 @@ export function CategoryProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <CategoryContext.Provider value={{ selectedCategory, selectedName, setCategory }}>
+    <CategoryContext.Provider value={{ selectedCategory, selectedName, setCategory, isSearching, searchQuery, setIsSearching, setSearchQuery }}>
       {children}
     </CategoryContext.Provider>
   );

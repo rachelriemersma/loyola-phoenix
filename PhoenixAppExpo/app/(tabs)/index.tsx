@@ -81,7 +81,7 @@ export default function HomeScreen() {
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const { selectedCategory, selectedName } = useCategory();
+  const { selectedCategory, selectedName, isSearching, searchQuery } = useCategory();
   const router = useRouter();
 
   const fetchArticles = useCallback((categoryId: number[], pageNum: number, append: boolean = false) => {
@@ -93,16 +93,14 @@ export default function HomeScreen() {
     setError(null);
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
 
     fetch(`https://loyolaphoenix.com/wp-json/wp/v2/posts?categories=${categoryId.join(',')}&per_page=20&page=${pageNum}&orderby=date&order=desc&_embed`, {
       signal: controller.signal
     })
       .then(response => {
         clearTimeout(timeoutId);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const totalPages = response.headers.get('X-WP-TotalPages');
         setHasMore(pageNum < parseInt(totalPages || '1'));
         return response.json();
@@ -135,15 +133,66 @@ export default function HomeScreen() {
       });
   }, []);
 
+  const fetchSearchResults = useCallback((query: string) => {
+    setLoading(true);
+    setError(null);
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+    fetch(`https://loyolaphoenix.com/wp-json/wp/v2/posts?search=${encodeURIComponent(query)}&per_page=20&orderby=relevance&_embed`, {
+      signal: controller.signal
+    })
+      .then(response => {
+        clearTimeout(timeoutId);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        return response.json();
+      })
+      .then(data => {
+        setArticles(data);
+        setHasMore(false);
+        setLoading(false);
+        setRefreshing(false);
+        setError(null);
+      })
+      .catch(error => {
+        clearTimeout(timeoutId);
+        console.error(error);
+        const errorMessage = error.name === 'AbortError'
+          ? 'Request timed out. Please check your connection.'
+          : 'Search failed. Please try again.';
+        setError(errorMessage);
+        setLoading(false);
+        setRefreshing(false);
+      });
+  }, []);
+
+  // Category feed effect
   useEffect(() => {
+    if (isSearching) return;
     setPage(1);
     setHasMore(true);
     setArticles([]);
     fetchArticles(selectedCategory, 1, false);
-  }, [selectedCategory]);
+  }, [selectedCategory, isSearching]);
+
+  // Search effect with debounce
+  useEffect(() => {
+    if (!isSearching) return;
+    if (!searchQuery.trim()) {
+      setArticles([]);
+      return;
+    }
+    const timer = setTimeout(() => {
+      setPage(1);
+      setArticles([]);
+      fetchSearchResults(searchQuery.trim());
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery, isSearching]);
 
   const loadMore = () => {
-    if (!loadingMore && hasMore && !error) {
+    if (!loadingMore && hasMore && !error && !isSearching) {
       const nextPage = page + 1;
       setPage(nextPage);
       fetchArticles(selectedCategory, nextPage, true);
@@ -155,15 +204,23 @@ export default function HomeScreen() {
     setPage(1);
     setHasMore(true);
     setError(null);
-    fetchArticles(selectedCategory, 1, false);
-  }, [selectedCategory, fetchArticles]);
+    if (isSearching && searchQuery.trim()) {
+      fetchSearchResults(searchQuery.trim());
+    } else {
+      fetchArticles(selectedCategory, 1, false);
+    }
+  }, [selectedCategory, isSearching, searchQuery, fetchArticles, fetchSearchResults]);
 
   const retryFetch = useCallback(() => {
     setError(null);
     setPage(1);
     setHasMore(true);
-    fetchArticles(selectedCategory, 1, false);
-  }, [selectedCategory, fetchArticles]);
+    if (isSearching && searchQuery.trim()) {
+      fetchSearchResults(searchQuery.trim());
+    } else {
+      fetchArticles(selectedCategory, 1, false);
+    }
+  }, [selectedCategory, isSearching, searchQuery, fetchArticles, fetchSearchResults]);
 
   const renderFooter = () => {
     if (!loadingMore) return null;

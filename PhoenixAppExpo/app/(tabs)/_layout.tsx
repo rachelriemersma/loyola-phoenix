@@ -1,9 +1,10 @@
 import { Drawer } from 'expo-router/drawer';
 import React from 'react';
-import { Image, View, TouchableOpacity, StyleSheet } from 'react-native';
+import { Image, View, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
 import { DrawerContentScrollView } from '@react-navigation/drawer';
 import type { DrawerContentComponentProps } from '@react-navigation/drawer';
 import { Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 import { CategoryProvider, CATEGORIES, useCategory } from '@/contexts/category-context';
 
@@ -45,20 +46,41 @@ function CustomDrawerContent(props: DrawerContentComponentProps) {
 }
 
 function DrawerNavigator() {
+  const { isSearching, searchQuery, setIsSearching, setSearchQuery } = useCategory();
+
   return (
     <Drawer
       drawerContent={(props) => <CustomDrawerContent {...props} />}
       screenOptions={{
         headerTintColor: '#8B0000',
-        headerTitle: () => (
-          <Image source={logo} style={styles.headerLogo} resizeMode="contain" />
+        headerStyle: { backgroundColor: '#fff' },
+        drawerStyle: { backgroundColor: '#fff' },
+        headerTitle: isSearching
+          ? () => (
+              <TextInput
+                autoFocus
+                style={styles.searchInput}
+                placeholder="Search articles..."
+                placeholderTextColor="#999"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                returnKeyType="search"
+                clearButtonMode="never"
+              />
+            )
+          : () => <Image source={logo} style={styles.headerLogo} resizeMode="contain" />,
+        headerTitleContainerStyle: isSearching ? styles.searchTitleContainer : undefined,
+        headerRight: () => (
+          <TouchableOpacity
+            style={styles.headerButton}
+            onPress={() => {
+              setIsSearching(!isSearching);
+              if (isSearching) setSearchQuery('');
+            }}
+          >
+            <Ionicons name={isSearching ? 'close' : 'search'} size={22} color="#8B0000" />
+          </TouchableOpacity>
         ),
-        drawerStyle: {
-          backgroundColor: '#fff',
-        },
-        headerStyle: {
-          backgroundColor: '#fff',
-        },
       }}
     >
       <Drawer.Screen name="index" />
@@ -79,6 +101,23 @@ const styles = StyleSheet.create({
   headerLogo: {
     width: 200,
     height: 44,
+  },
+  headerButton: {
+    paddingHorizontal: 14,
+  },
+  searchTitleContainer: {
+    flex: 1,
+    marginHorizontal: 4,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    fontFamily: 'Montserrat_400Regular',
+    color: '#111',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
   },
   drawerLogoContainer: {
     paddingHorizontal: 16,
