@@ -1,17 +1,23 @@
 import { Drawer } from 'expo-router/drawer';
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Image, View, TouchableOpacity, StyleSheet } from 'react-native';
 import { DrawerContentScrollView } from '@react-navigation/drawer';
 import type { DrawerContentComponentProps } from '@react-navigation/drawer';
+import { Text } from 'react-native';
 
 import { CategoryProvider, CATEGORIES, useCategory } from '@/contexts/category-context';
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const logo = require('@/assets/images/tlp-black.png');
 
 function CustomDrawerContent(props: DrawerContentComponentProps) {
   const { selectedName, setCategory } = useCategory();
 
   return (
     <DrawerContentScrollView {...props}>
-      <Text style={styles.drawerTitle}>The Loyola Phoenix</Text>
+      <View style={styles.drawerLogoContainer}>
+        <Image source={logo} style={styles.drawerLogo} resizeMode="contain" />
+      </View>
       {CATEGORIES.map(category => (
         <TouchableOpacity
           key={category.name}
@@ -44,12 +50,9 @@ function DrawerNavigator() {
       drawerContent={(props) => <CustomDrawerContent {...props} />}
       screenOptions={{
         headerTintColor: '#8B0000',
-        headerTitle: 'The Loyola Phoenix',
-        headerTitleStyle: {
-          color: '#8B0000',
-          fontWeight: 'bold',
-          fontSize: 20,
-        },
+        headerTitle: () => (
+          <Image source={logo} style={styles.headerLogo} resizeMode="contain" />
+        ),
         drawerStyle: {
           backgroundColor: '#fff',
         },
@@ -73,15 +76,21 @@ export default function DrawerLayout() {
 }
 
 const styles = StyleSheet.create({
-  drawerTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#8B0000',
+  headerLogo: {
+    width: 200,
+    height: 44,
+  },
+  drawerLogoContainer: {
     paddingHorizontal: 16,
     paddingVertical: 20,
     borderBottomWidth: 2,
     borderBottomColor: '#8B0000',
     marginBottom: 8,
+    alignItems: 'center',
+  },
+  drawerLogo: {
+    width: 180,
+    height: 40,
   },
   drawerItem: {
     paddingHorizontal: 16,

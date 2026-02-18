@@ -5,10 +5,11 @@ import {
   Text,
   View,
   StyleSheet,
-  ActivityIndicator,
+  TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
 const decodeHTML = (html: string) => {
   return html
@@ -30,6 +31,7 @@ const stripHTML = (html: string) => {
 
 export default function ArticleScreen() {
   const { title, date, content, author, imageUrl } = useLocalSearchParams();
+  const router = useRouter();
 
   // Memoize expensive string operations
   const decodedTitle = useMemo(() => {
@@ -65,6 +67,10 @@ export default function ArticleScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <Ionicons name="arrow-back" size={24} color="#8B0000" />
+        <Text style={styles.backText}>Back</Text>
+      </TouchableOpacity>
       <ScrollView
         style={styles.scroll}
         showsVerticalScrollIndicator={false}
@@ -130,4 +136,18 @@ image: {
   borderRadius: 8,
   marginBottom: 10,
 },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  backText: {
+    fontSize: 16,
+    color: '#8B0000',
+    fontWeight: '600',
+    marginLeft: 6,
+  },
 });

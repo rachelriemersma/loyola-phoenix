@@ -81,7 +81,7 @@ export default function HomeScreen() {
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const { selectedCategory } = useCategory();
+  const { selectedCategory, selectedName } = useCategory();
   const router = useRouter();
 
   const fetchArticles = useCallback((categoryId: number[], pageNum: number, append: boolean = false) => {
@@ -225,6 +225,9 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
+      <View style={styles.sectionLabel}>
+        <Text style={styles.sectionLabelText}>{selectedName}</Text>
+      </View>
       {loading && articles.length === 0 ? (
         <View style={styles.centered}>
           <ActivityIndicator size="large" color="#8B0000" />
@@ -324,5 +327,17 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  sectionLabel: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    backgroundColor: '#fff',
+  },
+  sectionLabelText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#8B0000',
   },
 });
