@@ -4,6 +4,7 @@ import { Montserrat_400Regular, Montserrat_600SemiBold, Montserrat_700Bold } fro
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
+import * as Updates from 'expo-updates';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
 
@@ -27,12 +28,23 @@ export default function RootLayout() {
     return () => clearTimeout(timer);
   }, [fontsLoaded]);
 
+  useEffect(() => {
+    if (__DEV__) return;
+    Updates.checkForUpdateAsync()
+      .then(update => {
+        if (update.isAvailable) return Updates.fetchUpdateAsync();
+      })
+      .then(result => {
+        if (result) Updates.reloadAsync();
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="article" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>

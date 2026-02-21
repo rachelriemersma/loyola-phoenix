@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Image } from 'expo-image';
 import {
   ScrollView,
@@ -10,28 +10,16 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-
-const decodeHTML = (html: string) => {
-  return html
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#039;/g, "'")
-    .replace(/&#8217;/g, "'")
-    .replace(/&#8216;/g, "'")
-    .replace(/&#8220;/g, '"')
-    .replace(/&#8221;/g, '"')
-    .replace(/&nbsp;/g, ' ');
-};
-
-const stripHTML = (html: string) => {
-  return html.replace(/<[^>]*>/g, '');
-};
+import { decodeHTML, stripHTML } from '@/utils/html';
+import { logScreenView } from '@/utils/analytics';
 
 export default function ArticleScreen() {
   const { title, date, content, author, imageUrl } = useLocalSearchParams();
   const router = useRouter();
+
+  useEffect(() => {
+    logScreenView('article');
+  }, []);
 
   // Memoize expensive string operations
   const decodedTitle = useMemo(() => {

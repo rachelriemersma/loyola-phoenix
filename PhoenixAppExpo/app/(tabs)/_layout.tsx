@@ -84,7 +84,6 @@ function DrawerNavigator() {
       }}
     >
       <Drawer.Screen name="index" />
-      <Drawer.Screen name="explore" options={{ drawerItemStyle: { display: 'none' } }} />
     </Drawer>
   );
 }
@@ -142,7 +141,8 @@ const styles = StyleSheet.create({
   },
   drawerItemText: {
     fontSize: 14,
-    fontFamily: 'Montserrat_600SemiBold',
+    fontFamily: 'Montserrat_700Bold',
+    fontWeight: '700',
     color: '#000',
     textTransform: 'uppercase',
     letterSpacing: 1.2,

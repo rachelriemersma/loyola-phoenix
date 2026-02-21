@@ -12,37 +12,32 @@ import {
 } from 'react-native';
 
 import { useCategory } from '@/contexts/category-context';
+import { decodeHTML } from '@/utils/html';
+import { getCache, setCache } from '@/utils/cache';
+import { logScreenView, logArticleOpen } from '@/utils/analytics';
 
-const decodeHTML = (html: string) => {
-  return html
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#039;/g, "'")
-    .replace(/&#8217;/g, "'")
-    .replace(/&#8216;/g, "'")
-    .replace(/&#8220;/g, '"')
-    .replace(/&#8221;/g, '"')
-    .replace(/&nbsp;/g, ' ');
+type Article = {
+  id: number;
+  title: { rendered: string };
+  date: string;
+  content: { rendered: string };
+  _embedded?: {
+    'wp:featuredmedia'?: [{ source_url: string }];
+    author?: [{ name: string }];
+  };
 };
 
-// Memoized article item component for better performance
 const ArticleItem = React.memo(({
-  id,
   title,
   author,
   date,
   imageUrl,
-  content,
-  onPress
+  onPress,
 }: {
-  id: number;
   title: string;
   author: string;
   date: string;
   imageUrl?: string;
-  content: string;
   onPress: () => void;
 }) => {
   const decodedTitle = useMemo(() => decodeHTML(title), [title]);
@@ -74,30 +69,46 @@ const ArticleItem = React.memo(({
 });
 
 export default function HomeScreen() {
-  const [articles, setArticles] = useState<any[]>([]);
+  const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [isStaleData, setIsStaleData] = useState(false);
   const { selectedCategory, selectedName, isSearching, searchQuery } = useCategory();
   const router = useRouter();
 
+  useEffect(() => {
+    logScreenView('home');
+  }, []);
+
   const fetchArticles = useCallback((categoryId: number[], pageNum: number, append: boolean = false) => {
+    const url = `https://loyolaphoenix.com/wp-json/wp/v2/posts?categories=${categoryId.join(',')}&per_page=20&page=${pageNum}&orderby=date&order=desc&_fields=id,title,date,content,_links&_embed=wp:featuredmedia,author`;
+
+    if (pageNum === 1 && !append) {
+      const cached = getCache<Article[]>(url);
+      if (cached && !cached.isStale) {
+        setArticles(cached.data);
+        setLoading(false);
+        setError(null);
+        return;
+      }
+    }
+
     if (pageNum === 1) {
       setLoading(true);
     } else {
       setLoadingMore(true);
     }
     setError(null);
+    setIsStaleData(false);
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-    fetch(`https://loyolaphoenix.com/wp-json/wp/v2/posts?categories=${categoryId.join(',')}&per_page=20&page=${pageNum}&orderby=date&order=desc&_embed`, {
-      signal: controller.signal
-    })
+    fetch(url, { signal: controller.signal })
       .then(response => {
         clearTimeout(timeoutId);
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -106,27 +117,38 @@ export default function HomeScreen() {
         return response.json();
       })
       .then(data => {
+        const fetched = data as Article[];
+        if (pageNum === 1 && !append) {
+          setCache(url, fetched);
+        }
         if (append) {
           setArticles(prev => {
-            const existingIds = new Set(prev.map(article => article.id));
-            const newArticles = data.filter((article: any) => !existingIds.has(article.id));
-            return [...prev, ...newArticles];
+            const existingIds = new Set(prev.map(a => a.id));
+            return [...prev, ...fetched.filter(a => !existingIds.has(a.id))];
           });
         } else {
-          setArticles(data);
+          setArticles(fetched);
         }
         setLoading(false);
         setLoadingMore(false);
         setRefreshing(false);
         setError(null);
       })
-      .catch(error => {
+      .catch(err => {
         clearTimeout(timeoutId);
-        console.error(error);
-        const errorMessage = error.name === 'AbortError'
-          ? 'Request timed out. Please check your connection.'
-          : 'Failed to load articles. Please try again.';
-        setError(errorMessage);
+        if (err.name === 'AbortError') {
+          setError('Request timed out. Please check your connection.');
+        } else if (pageNum === 1 && !append) {
+          const stale = getCache<Article[]>(url);
+          if (stale) {
+            setArticles(stale.data);
+            setIsStaleData(true);
+          } else {
+            setError('No internet connection. Connect and try again.');
+          }
+        } else {
+          setError('Failed to load more articles. Please try again.');
+        }
         setLoading(false);
         setLoadingMore(false);
         setRefreshing(false);
@@ -134,49 +156,65 @@ export default function HomeScreen() {
   }, []);
 
   const fetchSearchResults = useCallback((query: string) => {
+    const url = `https://loyolaphoenix.com/wp-json/wp/v2/posts?search=${encodeURIComponent(query)}&per_page=20&orderby=relevance&_fields=id,title,date,content,_links&_embed=wp:featuredmedia,author`;
+
+    const cached = getCache<Article[]>(url);
+    if (cached && !cached.isStale) {
+      setArticles(cached.data);
+      setHasMore(false);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
+    setIsStaleData(false);
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-    fetch(`https://loyolaphoenix.com/wp-json/wp/v2/posts?search=${encodeURIComponent(query)}&per_page=20&orderby=relevance&_embed`, {
-      signal: controller.signal
-    })
+    fetch(url, { signal: controller.signal })
       .then(response => {
         clearTimeout(timeoutId);
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         return response.json();
       })
       .then(data => {
-        setArticles(data);
+        const fetched = data as Article[];
+        setCache(url, fetched);
+        setArticles(fetched);
         setHasMore(false);
         setLoading(false);
         setRefreshing(false);
         setError(null);
       })
-      .catch(error => {
+      .catch(err => {
         clearTimeout(timeoutId);
-        console.error(error);
-        const errorMessage = error.name === 'AbortError'
-          ? 'Request timed out. Please check your connection.'
-          : 'Search failed. Please try again.';
-        setError(errorMessage);
+        if (err.name === 'AbortError') {
+          setError('Request timed out. Please check your connection.');
+        } else {
+          const stale = getCache<Article[]>(url);
+          if (stale) {
+            setArticles(stale.data);
+            setIsStaleData(true);
+          } else {
+            setError('Search failed. Check your connection and try again.');
+          }
+        }
         setLoading(false);
         setRefreshing(false);
       });
   }, []);
 
-  // Category feed effect
   useEffect(() => {
     if (isSearching) return;
     setPage(1);
     setHasMore(true);
     setArticles([]);
+    setIsStaleData(false);
     fetchArticles(selectedCategory, 1, false);
   }, [selectedCategory, isSearching]);
 
-  // Search effect with debounce
   useEffect(() => {
     if (!isSearching) return;
     if (!searchQuery.trim()) {
@@ -186,24 +224,26 @@ export default function HomeScreen() {
     const timer = setTimeout(() => {
       setPage(1);
       setArticles([]);
+      setIsStaleData(false);
       fetchSearchResults(searchQuery.trim());
     }, 400);
     return () => clearTimeout(timer);
   }, [searchQuery, isSearching]);
 
-  const loadMore = () => {
+  const loadMore = useCallback(() => {
     if (!loadingMore && hasMore && !error && !isSearching) {
       const nextPage = page + 1;
       setPage(nextPage);
       fetchArticles(selectedCategory, nextPage, true);
     }
-  };
+  }, [loadingMore, hasMore, error, isSearching, page, selectedCategory, fetchArticles]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     setPage(1);
     setHasMore(true);
     setError(null);
+    setIsStaleData(false);
     if (isSearching && searchQuery.trim()) {
       fetchSearchResults(searchQuery.trim());
     } else {
@@ -215,6 +255,7 @@ export default function HomeScreen() {
     setError(null);
     setPage(1);
     setHasMore(true);
+    setIsStaleData(false);
     if (isSearching && searchQuery.trim()) {
       fetchSearchResults(searchQuery.trim());
     } else {
@@ -222,7 +263,7 @@ export default function HomeScreen() {
     }
   }, [selectedCategory, isSearching, searchQuery, fetchArticles, fetchSearchResults]);
 
-  const renderFooter = () => {
+  const renderFooter = useCallback(() => {
     if (!loadingMore) return null;
     return (
       <View style={styles.footer}>
@@ -230,9 +271,9 @@ export default function HomeScreen() {
         <Text style={styles.loadingText}>Loading more...</Text>
       </View>
     );
-  };
+  }, [loadingMore]);
 
-  const renderItem = useCallback(({ item }: { item: any }) => {
+  const renderItem = useCallback(({ item }: { item: Article }) => {
     const imageUrl = item._embedded?.['wp:featuredmedia']?.[0]?.source_url;
     const title = item.title?.rendered || 'Untitled';
     const author = item._embedded?.author?.[0]?.name || 'The Loyola Phoenix';
@@ -241,22 +282,17 @@ export default function HomeScreen() {
 
     return (
       <ArticleItem
-        id={item.id}
         title={title}
         author={author}
         date={date}
         imageUrl={imageUrl}
-        content={content}
-        onPress={() => router.push({
-          pathname: '/article' as any,
-          params: {
-            title,
-            date,
-            content,
-            author,
-            imageUrl: imageUrl || '',
-          }
-        })}
+        onPress={() => {
+          logArticleOpen(title);
+          router.push({
+            pathname: '/article' as any,
+            params: { title, date, content, author, imageUrl: imageUrl || '' },
+          });
+        }}
       />
     );
   }, [router]);
@@ -285,6 +321,11 @@ export default function HomeScreen() {
       <View style={styles.sectionLabel}>
         <Text style={styles.sectionLabelText}>{selectedName}</Text>
       </View>
+      {isStaleData && (
+        <View style={styles.staleBanner}>
+          <Text style={styles.staleBannerText}>Offline — showing cached content</Text>
+        </View>
+      )}
       {loading && articles.length === 0 ? (
         <View style={styles.centered}>
           <ActivityIndicator size="large" color="#8B0000" />
@@ -399,9 +440,22 @@ const styles = StyleSheet.create({
   },
   sectionLabelText: {
     fontSize: 20,
-    fontFamily: 'Montserrat_600SemiBold',
+    fontFamily: 'Montserrat_700Bold',
+    fontWeight: '700',
     color: '#8B0000',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+  },
+  staleBanner: {
+    backgroundColor: '#f5f5f5',
+    paddingVertical: 6,
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  staleBannerText: {
+    fontSize: 12,
+    color: '#666',
+    fontFamily: 'Montserrat_400Regular',
   },
 });
